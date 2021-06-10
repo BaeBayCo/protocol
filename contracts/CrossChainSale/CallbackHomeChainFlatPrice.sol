@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./Callback.sol";
-import "./interfaces/ICreatorToken.sol";
+import "../interfaces/ICreatorToken.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";

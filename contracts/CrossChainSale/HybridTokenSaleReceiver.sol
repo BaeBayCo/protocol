@@ -14,10 +14,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV2V3Interface.sol";
 
 //import callback interface
-import "./interfaces/ICallback.sol";
+import "../interfaces/ICallback.sol";
 
 //import buyLimitManager interface
-import "./interfaces/IBuyLimitManager.sol";
+import "../interfaces/IBuyLimitManager.sol";
 
 /// @title Hybrid Token Sale Receiver
 /// @author KaeBay on behalf of BaeBay (will dox eventually lmao)

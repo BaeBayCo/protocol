@@ -51,20 +51,6 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
          treasury = _treasury; 
      }
 
-     function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, amount);
-
-        require(!paused(), "ERC20Pausable: token transfer while paused");
-
-        if (isDumpingAddress[to]){
-
-        }
-    }
-
     function _transfer(
         address sender,
         address recipient,

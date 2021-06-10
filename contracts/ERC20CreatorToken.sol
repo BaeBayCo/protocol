@@ -43,11 +43,11 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
          _burn(owner(), amount);
      }
 
-     function setDumpingAddress(address dump, bool status) external onlyOwner{
+     function setDumpingAddress(address dump, bool status) external override onlyOwner{
          isDumpingAddress[dump] = status;
      }
 
-     function setTreasury(address _treasury) external onlyOwner{
+     function setTreasury(address _treasury) external override onlyOwner{
          treasury = _treasury; 
      }
 

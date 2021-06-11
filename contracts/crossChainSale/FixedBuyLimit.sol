@@ -11,7 +11,7 @@ contract FixedBuyLimit is IBuyLimitManager{
         limit = _limit;
     }
     
-    function buyLimit(address user) external override returns(uint){
+    function buyLimit(address user) external view override returns(uint){
         return limit;
     }
 }

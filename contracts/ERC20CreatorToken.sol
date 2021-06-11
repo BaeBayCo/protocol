@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "./interfaces/ICreatorToken.sol";
+import "./interfaces/ITributeManager.sol";
 
 contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
 
@@ -17,6 +18,7 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
      mapping(address => bool) public isDumpingAddress;
 
      address public treasury;
+     address public tributeManager;
 
      constructor (string memory name_, string memory symbol_) 
           ERC20(name_,symbol_) ERC20Permit(name_){
@@ -49,6 +51,10 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
 
      function setTreasury(address _treasury) external override onlyOwner{
          treasury = _treasury; 
+     }
+
+     function setTributeManager(address _tributeManager) external override onlyOwner{
+          tributeManager = _tributeManager;
      }
 
     function _transfer(
@@ -87,6 +93,8 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
                _burn(sender, burnAmount);
                _transfer(sender, treasury, treasuryAmount);
 
+               //We're implementing "dumper extracted value"
+               if(tributeManager != address(0)) ITributeManager(tributeManager).doTribute();
          }
 
         super._transfer(sender,recipient,amount);

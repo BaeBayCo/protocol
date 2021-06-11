@@ -136,7 +136,7 @@ contract HybridTokenSaleReceiver is Ownable,Pausable{
         _unpause();
     }
 
-    function _computeUSDValue(address token, uint amount) internal view returns(uint){
+    function _computeValueInTokens(address token, uint amountUSD) internal view returns(uint){
         // price/10^oracleDecimals * (wei*10^(18-tokenDecimals))
 
         AggregatorV2V3Interface priceFeed = AggregatorV2V3Interface(paymentTokenPriceFeedAddress[token]);
@@ -147,7 +147,7 @@ contract HybridTokenSaleReceiver is Ownable,Pausable{
         uint tokenDecimals = ERC20(token).decimals();
 
         return SafeMath.mul(
-                amount,
+                amountUSD,
                 SafeMath.mul(
                     SafeMath.div(latestPrice, 10**priceFeedDecimals),
                     10**SafeMath.sub(18,tokenDecimals)
@@ -155,26 +155,26 @@ contract HybridTokenSaleReceiver is Ownable,Pausable{
             );
     }
 
-    function deposit(address token, uint amount) external whenNotPaused{
+    function deposit(address token, uint amountUSD) external whenNotPaused{
         //calculate dollar value using chainlink
-        uint usdValue = _computeUSDValue(token, amount);
+        uint amountPaymentToken = _computeValueInTokens(token, amountUSD);
 
         //current amount in interval + amountDollars must be < limit for interval
         require(
-            usdValue + UserUsdWei[_msgSender()] 
+            amountUSD + UserUsdWei[_msgSender()] 
                 <= 
             IBuyLimitManager(buyLimitManager).buyLimit(_msgSender()), 
             "error: requested deposit would cause total interval spend to exceed limit"
         );
 
-        UserUsdWei[_msgSender()] += usdValue;
+        UserUsdWei[_msgSender()] += amountUSD;
 
-        SafeERC20.safeTransferFrom(IERC20(token),_msgSender(),receiverAddress,amount);
+        SafeERC20.safeTransferFrom(IERC20(token),_msgSender(),receiverAddress,amountPaymentToken);
 
-        if (callbackAddress != address(0)) ICallback(callbackAddress).callback(_msgSender(),usdValue);
+        if (callbackAddress != address(0)) ICallback(callbackAddress).callback(_msgSender(),amountUSD);
 
         //emit event
-        emit Deposit(_msgSender(), token, usdValue);
+        emit Deposit(_msgSender(), token, amountUSD);
     }
 
 }

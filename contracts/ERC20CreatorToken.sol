@@ -19,17 +19,11 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
      address public treasury;
      address public tributeManager;
 
-     constructor (string memory name_, string memory symbol_) 
+     constructor (string memory name_, string memory symbol_, address treasury_, uint maxSupply) 
           ERC20(name_,symbol_) ERC20Permit(name_){
                _pause();
-               treasury = msg.sender;
-     }
-
-     function mint(address to, uint amount) external override onlyOwner{
-         bool _pauseAfterMint = paused();
-         if(_pauseAfterMint)_unpause();
-         _mint(to,amount);
-         if(_pauseAfterMint)_pause();
+               _mint(treasury_,maxSupply);
+               treasury = treasury_;
      }
 
      function unpause() external override onlyOwner{

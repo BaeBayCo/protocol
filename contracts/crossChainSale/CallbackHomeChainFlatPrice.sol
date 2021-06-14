@@ -9,9 +9,17 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+/// @title Callback (Home Chain Flat Price)
+/// @author KaeBay on behalf of BaeBay (will dox eventually lmao)
+
+/** @notice This callback contract sends tokens to users as soon as purchase is made
+ */
+
 contract CallbackHomeChainFlatPrice is Ownable,Callback{
 
     address public saleToken;
+
+    //wallet that holds tokens and has given approval to this contract
     address public stWallet;
 
     // USD Amount * priceNum / priceDenom = number of tokens

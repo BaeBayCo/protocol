@@ -74,25 +74,9 @@ abstract contract SaleCurve is Ownable{
        unitsSold += amountOutRounded;
 
        SafeERC20.safeTransferFrom(IERC20(paymentToken),msg.sender,owner(),charge);
-       ICreatorToken(saleToken).mint(to,amountOutRounded);
+       SafeERC20.safeTransferFrom(IERC20(saleToken),owner(),msg.sender,amountOutRounded);
 
    }
-
-    function endSale() external{
-        bool targetReached = (saleLimit <= unitsSold);
-        bool endTimeReached = (block.timestamp >= endTime);
-        require(targetReached || endTimeReached,"Error : Condtions for end of sale not met");
-        
-        uint creatorCutTotal = SafeMath.div(
-            SafeMath.mul(unitsSold,creatorCutBP), 
-            10000);
-
-        ICreatorToken saleTokenContract = ICreatorToken(saleToken);
-
-        saleTokenContract.mint(owner(),creatorCutTotal);
-        saleTokenContract.unpause();
-        Ownable(saleToken).renounceOwnership();
-    }
 
     function computeCharge(uint amountOut) external view returns(uint charge){
         uint amountOutRounded;

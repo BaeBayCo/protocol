@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "../utils/PauseManager.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -46,7 +45,7 @@ import "../interfaces/IBuyLimitManager.sol";
     NOT ALL FEATURES WILL BE USED IN THE FIRST SALE
 */
 
-contract HybridTokenSaleReceiver is Ownable,Pausable{
+contract HybridTokenSaleReceiver is PauseManager{
 
     /// @dev timestamps
     uint public start;
@@ -60,8 +59,6 @@ contract HybridTokenSaleReceiver is Ownable,Pausable{
 
     /// @dev where the buyLimit manager is deployed
     address public buyLimitManager;
-
-    mapping(address => bool) public isPauser;
 
     /// @dev the address of the Chainlink price feed of a given token
     mapping(address => address) public paymentTokenPriceFeedAddress;
@@ -111,11 +108,6 @@ contract HybridTokenSaleReceiver is Ownable,Pausable{
 
     function setPriceFeed(address token, address feed) external onlyOwner {
         paymentTokenPriceFeedAddress[token]     = feed;
-    }
-
-
-    function setPauser(address pauser, bool status) external onlyOwner{
-        isPauser[pauser] = status;
     }
 
     // a future version of this contract will support gasless deposits, e.g. for ETH mainnet users.

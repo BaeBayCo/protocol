@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "./interfaces/ICreatorToken.sol";
 import "./interfaces/ITributeManager.sol";
 
-contract ERC20CreatorToken is ICreatorToken,ERC20Permit,Pausable,Ownable{
+import "./utils/PauseManager.sol";
+
+contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
 
      uint public burnBP;
      uint public treasuryBP;

@@ -2,24 +2,25 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 
-async function createTokensAndCurve(multiple,saleLimit,creatorShareBP,endTime,a){
+async function createTokensAndCurve(multiple,saleLimit,endTime,a){
     const accounts = await ethers.getSigners();
+    const account0Address = await accounts[0].getAddress();
     const account1Address = await accounts[1].getAddress();
     const CreatorToken = await ethers.getContractFactory("ERC20CreatorToken");
-    const SaleCurve = await ethers.getContractFactory("SaleCurveQuadraticSimple")
+    const SaleCurve = await ethers.getContractFactory("SaleCurveQuadraticSimple");
 
-    const _saleToken = await CreatorToken.deploy("SaleToken","SALE");
+    const _saleToken = await CreatorToken.deploy("SaleToken","SALE",account0Address,ethers.constants.MaxUint256);
     await _saleToken.deployed();
 
     //stop gap solution for testing is to mint infinity tokens to the signer address
-    const _paymentToken = await CreatorToken.deploy("PayToken","PAY");
+    const _paymentToken = await CreatorToken.deploy("PayToken","PAY",account1Address,ethers.constants.MaxUint256);
     await _paymentToken.deployed();
-    await _paymentToken.mint(account1Address,ethers.constants.MaxUint256);
     await _paymentToken.unpause();
 
-    const _saleCurve = await SaleCurve.deploy(multiple,saleLimit,creatorShareBP,endTime,a,_saleToken.address,_paymentToken.address);
+    const _saleCurve = await SaleCurve.deploy(multiple,saleLimit,endTime,a,_saleToken.address,_paymentToken.address);
     await _saleCurve.deployed();
-    await _saleToken.transferOwnership(_saleCurve.address);
+    await _saleToken.approve(_saleCurve.address,ethers.constants.MaxUint256);
+    await _saleToken.setPauser(_saleCurve.address,true);
     await _paymentToken.connect(accounts[1]).approve(_saleCurve.address,ethers.constants.MaxUint256);
 
     return {paymentToken:_paymentToken,saleToken:_saleToken,saleCurve:_saleCurve}
@@ -37,7 +38,6 @@ describe("Simple Quadratic Sale Curve", function(){
 
             const {paymentToken,saleToken,saleCurve} = await createTokensAndCurve(
                     "1",
-                    "1000",
                     "1000",
                     Math.floor(Date.now()/1000)+120,
                     "1"
@@ -63,7 +63,6 @@ describe("Simple Quadratic Sale Curve", function(){
             const {paymentToken,saleToken,saleCurve} = await createTokensAndCurve(
                     "1",
                     "1000",
-                    "1000",
                     Math.floor(Date.now()/1000)+120,
                     "1"
                 );
@@ -88,7 +87,6 @@ describe("Simple Quadratic Sale Curve", function(){
 
             const {paymentToken,saleToken,saleCurve} = await createTokensAndCurve(
                     "1",
-                    "1000",
                     "1000",
                     Math.floor(Date.now()/1000)+120,
                     "1"
@@ -117,7 +115,6 @@ describe("Simple Quadratic Sale Curve", function(){
             const {paymentToken,saleToken,saleCurve} = await createTokensAndCurve(
                 "1",
                 "1000",
-                "1000",
                 Math.floor(Date.now()/1000)+120,
                 "1"
             );
@@ -140,7 +137,6 @@ describe("Simple Quadratic Sale Curve", function(){
             const {paymentToken,saleToken,saleCurve} = await createTokensAndCurve(
                 ethers.utils.parseUnits("1"),
                 ethers.utils.parseUnits("1000000"),
-                "1000",
                 Math.floor(Date.now()/1000)+120,
                 ethers.utils.parseUnits("2")
             );

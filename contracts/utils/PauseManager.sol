@@ -16,4 +16,14 @@ contract PauseManager is IPauseManager,Pausable,Ownable{
         emit SetPauser(pauser, status);
     }
 
+    function pause() external override{
+        require(isPauser[msg.sender],"PauseManager : Error : Caller not authorised");
+        _pause();
+    }
+
+    function unpause() external override{
+        require(isPauser[msg.sender],"PauseManager : Error : Caller not authorised");
+        _unpause();
+    }
+
 }

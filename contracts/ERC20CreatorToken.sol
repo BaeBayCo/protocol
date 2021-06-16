@@ -26,14 +26,6 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
                treasury = treasury_;
      }
 
-     function unpause() external override onlyOwner{
-         _unpause();
-     }
-
-     function pause() external override onlyOwner{
-         _pause();
-     }
-
      function burn(uint amount) external override onlyOwner{
          _burn(owner(), amount);
      }

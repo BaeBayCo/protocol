@@ -8,6 +8,4 @@ interface ICreatorToken is IPauseManager{
     function setDumpingAddress(address dump, bool status) external;
     function setTreasury(address _treasury) external;
     function setTributeManager(address _tributeManager) external;
-    function unpause() external;
-    function pause() external;
 }

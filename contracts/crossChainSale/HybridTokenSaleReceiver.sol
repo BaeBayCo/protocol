@@ -116,18 +116,6 @@ contract HybridTokenSaleReceiver is PauseManager{
         trustedForwarder = forwarder;
     }**/
 
-
-    function pause() external{
-        require(isPauser[_msgSender()]);
-        _pause();
-    }
-
-
-    function unpause() external{
-        require(isPauser[_msgSender()]);
-        _unpause();
-    }
-
     function _computeValueInTokens(address token, uint amountUSD) internal view returns(uint){
         // price/10^oracleDecimals * (wei*10^(18-tokenDecimals))
 

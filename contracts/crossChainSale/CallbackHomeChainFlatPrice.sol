@@ -54,6 +54,7 @@ contract CallbackHomeChainFlatPrice is Ownable,Callback{
             SafeMath.mul(amount, priceNum),
             priceDenom
         );
+        //unpause sends and re-pauses
         ICreatorToken(saleToken).unpause();
         SafeERC20.safeTransferFrom(IERC20(saleToken), stWallet, from, amountSaleToken);
         ICreatorToken(saleToken).pause();

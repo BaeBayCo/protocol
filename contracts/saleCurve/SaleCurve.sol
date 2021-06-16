@@ -22,9 +22,6 @@ abstract contract SaleCurve is Ownable{
     /// @notice amount of payment tokens (in wei) accrued by the sale
     uint public revenue;
 
-    /// @notice amount of tokens the creator will receive, as basis points (1/10000) of total issued in the sale
-    uint public creatorCutBP;
-
     uint public endTime;
 
     /// @notice the token we're selling
@@ -38,7 +35,6 @@ abstract contract SaleCurve is Ownable{
     constructor(
                 uint _multiple, 
                 uint _saleLimit, 
-                uint _creatorCutBP,
                 uint _endTime, 
                 address _saleToken, 
                 address _paymentToken
@@ -49,7 +45,6 @@ abstract contract SaleCurve is Ownable{
 
         multiple       =  _multiple;
         saleLimit      =  _saleLimit;
-        creatorCutBP = _creatorCutBP;
         endTime        = _endTime;
 
         saleToken      = _saleToken;
@@ -72,8 +67,11 @@ abstract contract SaleCurve is Ownable{
 
        revenue = newRevenue;
        unitsSold += amountOutRounded;
-
+       
+       ICreatorToken(saleToken).unpause();
        SafeERC20.safeTransferFrom(IERC20(paymentToken),msg.sender,owner(),charge);
+       ICreatorToken(saleToken).pause();
+       
        SafeERC20.safeTransferFrom(IERC20(saleToken),owner(),msg.sender,amountOutRounded);
 
    }

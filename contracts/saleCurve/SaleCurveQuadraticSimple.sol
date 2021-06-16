@@ -18,7 +18,6 @@ contract SaleCurveQuadraticSimple is SaleCurve{
 
    constructor(uint _multiple, 
                uint _saleLimit,
-               uint _creatorShareBP,
                uint _endTime,
                uint _a, 
                address _saleToken, 
@@ -26,7 +25,6 @@ contract SaleCurveQuadraticSimple is SaleCurve{
         SaleCurve(
             _multiple,
             _saleLimit,
-            _creatorShareBP,
             _endTime,
             _saleToken, 
             _paymentToken

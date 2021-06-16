@@ -15,10 +15,14 @@ async function createTokensAndCurve(multiple,saleLimit,endTime,a){
     //stop gap solution for testing is to mint infinity tokens to the signer address
     const _paymentToken = await CreatorToken.deploy("PayToken","PAY",account1Address,ethers.constants.MaxUint256);
     await _paymentToken.deployed();
+    await _paymentToken.setPauser(account0Address,true);
     await _paymentToken.unpause();
 
     const _saleCurve = await SaleCurve.deploy(multiple,saleLimit,endTime,a,_saleToken.address,_paymentToken.address);
     await _saleCurve.deployed();
+
+    
+
     await _saleToken.approve(_saleCurve.address,ethers.constants.MaxUint256);
     await _saleToken.setPauser(_saleCurve.address,true);
     await _paymentToken.connect(accounts[1]).approve(_saleCurve.address,ethers.constants.MaxUint256);
@@ -47,7 +51,7 @@ describe("Simple Quadratic Sale Curve", function(){
 
             const saleTokenBalance = await saleToken.balanceOf(account1Address);
 
-            const paymentTokenBalance = await paymentToken.balanceOf(account0Address);
+            const paymentTokenBalance = await paymentToken.balanceOf(saleCurve.address);
 
             expect(saleTokenBalance.toString()).to.equal("1");
             expect(paymentTokenBalance.toString()).to.equal("1");
@@ -71,7 +75,7 @@ describe("Simple Quadratic Sale Curve", function(){
 
             const saleTokenBalance = await saleToken.balanceOf(account1Address);
 
-            const paymentTokenBalance = await paymentToken.balanceOf(account0Address);
+            const paymentTokenBalance = await paymentToken.balanceOf(saleCurve.address);
 
             expect(saleTokenBalance.toString()).to.equal("10");
             expect(paymentTokenBalance.toString()).to.equal("385");
@@ -93,10 +97,10 @@ describe("Simple Quadratic Sale Curve", function(){
                 );
             
             await saleCurve.connect(accounts[1]).buy("10","1000",account1Address);
-            const paymentTokenBalance0 = await paymentToken.balanceOf(account0Address);
+            const paymentTokenBalance0 = await paymentToken.balanceOf(saleCurve.address);
 
             await saleCurve.connect(accounts[1]).buy("1","1000",account2Address);
-            const paymentTokenBalance1 = await paymentToken.balanceOf(account0Address);
+            const paymentTokenBalance1 = await paymentToken.balanceOf(saleCurve.address);
 
             const saleTokenBalance = await saleToken.balanceOf(account2Address);
 
@@ -145,7 +149,7 @@ describe("Simple Quadratic Sale Curve", function(){
 
             const saleTokenBalance = await saleToken.balanceOf(account1Address);
 
-            const paymentTokenBalance = await paymentToken.balanceOf(account0Address);
+            const paymentTokenBalance = await paymentToken.balanceOf(saleCurve.address);
 
             expect(saleTokenBalance.toString()).to.equal(ethers.utils.parseUnits("1"));
             expect(paymentTokenBalance.toString()).to.equal(ethers.utils.parseUnits("2"));
@@ -168,7 +172,7 @@ describe("Simple Quadratic Sale Curve", function(){
 
             const saleTokenBalance = await saleToken.balanceOf(account1Address);
 
-            const paymentTokenBalance = await paymentToken.balanceOf(account0Address);
+            const paymentTokenBalance = await paymentToken.balanceOf(saleCurve.address);
 
             expect(saleTokenBalance.toString()).to.equal(ethers.utils.parseUnits("10"));
             expect(paymentTokenBalance.toString()).to.equal(ethers.utils.parseUnits("770"));
@@ -180,6 +184,7 @@ describe("Simple Quadratic Sale Curve", function(){
             const accounts = await ethers.getSigners();
             const account0Address = await accounts[0].getAddress();
             const account1Address = await accounts[1].getAddress();
+            const account2Address = await accounts[2].getAddress();
 
             const {paymentToken,saleToken,saleCurve} = await createTokensAndCurve(
                 ethers.utils.parseUnits("1"),
@@ -188,9 +193,9 @@ describe("Simple Quadratic Sale Curve", function(){
                 ethers.utils.parseUnits("2")
             );
 
-            await saleCurve.buy(ethers.utils.parseUnits("10"),ethers.utils.parseUnits("1000"),account0Address);
+            await saleCurve.connect(accounts[1]).buy(ethers.utils.parseUnits("10"),ethers.utils.parseUnits("1000"),account0Address);
             await saleCurve.withdraw();
-            await saleCurve.buy(ethers.utils.parseUnits("1"),ethers.utils.parseUnits("1000"),account1Address)
+            await saleCurve.connect(accounts[1]).buy(ethers.utils.parseUnits("1"),ethers.utils.parseUnits("1000"),account1Address)
 
             const saleTokenBalance = await saleToken.balanceOf(account1Address);
 
@@ -213,8 +218,8 @@ describe("Simple Quadratic Sale Curve", function(){
                 ethers.utils.parseUnits("2")
             );
 
-            await saleCurve.buy(ethers.utils.parseUnits("10"),ethers.utils.parseUnits("1000"),account0Address);
-            await expect(saleCurve.buy(ethers.utils.parseUnits("10000000000000000000000"),ethers.utils.parseUnits("100000000000000000000000000"),account1Address)).to.be.
+            await saleCurve.connect(accounts[1]).buy(ethers.utils.parseUnits("10"),ethers.utils.parseUnits("1000"),account0Address);
+            await expect(saleCurve.connect(accounts[1]).buy(ethers.utils.parseUnits("10000000000000000000000"),ethers.utils.parseUnits("100000000000000000000000000"),account1Address)).to.be.
                 revertedWith("Error : Not enough tokens remain to complete sale");
         });
 

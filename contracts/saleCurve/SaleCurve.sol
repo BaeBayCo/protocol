@@ -52,6 +52,14 @@ abstract contract SaleCurve is Ownable{
 
     }
 
+    function withdraw() external onlyOwner{
+        SafeERC20.safeTransfer(
+            IERC20(paymentToken),
+            owner(),
+            IERC20(paymentToken).balanceOf(address(this))
+        );
+    }
+
     function buy(uint amountOut, uint maxAmountIn, address to) external{
 
        //operates on assumption price only goes up, which is true cos a & b can only be positive ints
@@ -67,12 +75,12 @@ abstract contract SaleCurve is Ownable{
 
        revenue = newRevenue;
        unitsSold += amountOutRounded;
+
+       SafeERC20.safeTransferFrom(IERC20(paymentToken),msg.sender,address(this),charge);
        
        ICreatorToken(saleToken).unpause();
-       SafeERC20.safeTransferFrom(IERC20(paymentToken),msg.sender,owner(),charge);
+       SafeERC20.safeTransferFrom(IERC20(saleToken),owner(),to,amountOutRounded);
        ICreatorToken(saleToken).pause();
-       
-       SafeERC20.safeTransferFrom(IERC20(saleToken),owner(),msg.sender,amountOutRounded);
 
    }
 

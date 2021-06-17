@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+
 import "../interfaces/ICreatorToken.sol";
 
 
@@ -77,10 +79,12 @@ abstract contract SaleCurve is Ownable{
        unitsSold += amountOutRounded;
 
        SafeERC20.safeTransferFrom(IERC20(paymentToken),msg.sender,address(this),charge);
+
+       bool saleTokenPaused = Pausable(saleToken).paused();
        
-       ICreatorToken(saleToken).unpause();
+       if (saleTokenPaused) ICreatorToken(saleToken).unpause();
        SafeERC20.safeTransferFrom(IERC20(saleToken),owner(),to,amountOutRounded);
-       ICreatorToken(saleToken).pause();
+       if (saleTokenPaused) ICreatorToken(saleToken).pause();
 
    }
 

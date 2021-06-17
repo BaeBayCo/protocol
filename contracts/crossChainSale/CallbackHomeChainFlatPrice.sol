@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+import "@openzeppelin/contracts/security/Pausable.sol";
+
 /// @title Callback (Home Chain Flat Price)
 /// @author KaeBay on behalf of BaeBay (will dox eventually lmao)
 
@@ -55,9 +57,10 @@ contract CallbackHomeChainFlatPrice is Ownable,Callback{
             priceDenom
         );
         //unpause sends and re-pauses
-        ICreatorToken(saleToken).unpause();
+        bool saleTokenPaused = Pausable(saleToken).paused();
+        if (saleTokenPaused) ICreatorToken(saleToken).unpause();
         SafeERC20.safeTransferFrom(IERC20(saleToken), stWallet, from, amountSaleToken);
-        ICreatorToken(saleToken).pause();
+        if (saleTokenPaused) ICreatorToken(saleToken).pause();
     } 
 
     

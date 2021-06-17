@@ -7,4 +7,5 @@ interface IPauseManager{
     function pause() external;
 
     function unpause() external;
+    
 }

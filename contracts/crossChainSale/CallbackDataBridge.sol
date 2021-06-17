@@ -12,24 +12,29 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 */
 
 contract CallbackDataBridge is Callback,Ownable{
+    uint public totalPurchased;
+    uint public maxPurchasable;
     //number of addresses that participated on the sale on this network
-    uint public lenCounter;
+    uint public addressCounter;
     //the amount purchased in USD (18 dp) per address
     mapping(address => uint) public addressPurchase;
     //the list of buyers, for easier indexing, off chain
     address[] public buyers;
 
-    constructor(address _authorisedReceiver){
+    constructor(address _authorisedReceiver, uint _max){
         authorisedReceiver  = _authorisedReceiver;
+        maxPurchasable = _max;
     }
 
     function _callback(address from, uint amount) override internal{
+        require(totalPurchased + amount < maxPurchasable, "CallbackDataBridge : Error : maxPurchasable would be exceeded");
         // add buyer details if they haven't made a prior purchase for this given sale
         if (addressPurchase[from] == 0){
             buyers.push(from);
-            lenCounter++;
+            addressCounter++;
         }
         // add purchase amount to total
         addressPurchase[from] += amount;
+        totalPurchased += amount;
     }
 }

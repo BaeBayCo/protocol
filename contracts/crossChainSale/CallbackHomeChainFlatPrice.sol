@@ -28,7 +28,10 @@ contract CallbackHomeChainFlatPrice is Ownable,Callback{
     // these figures must take into account decimal places of the tokens (should all be 18)
     uint public priceNum;
     uint public priceDenom;
-    uint public max;
+    
+    //in USD terms
+    uint public maxPurchasable;
+    uint public totalPurchased;
 
     constructor(
             address _saleToken,
@@ -44,7 +47,7 @@ contract CallbackHomeChainFlatPrice is Ownable,Callback{
             authorisedReceiver  = _authorisedReceiver;
             priceNum            = _priceNum;
             priceDenom          = _priceDenom;
-            max                 = _max;
+            maxPurchasable     = _max;
         }
 
     function setAuthorisedReceiver(address _authorisedReceiver) external onlyOwner{
@@ -52,6 +55,7 @@ contract CallbackHomeChainFlatPrice is Ownable,Callback{
     }
 
     function _callback(address from, uint amount) override internal{
+        require(amount + totalPurchased < maxPurchasable, "CallbackHomeChainFlatPrice : Error: maxPurchasable would be exceeded");
         uint amountSaleToken = SafeMath.div(
             SafeMath.mul(amount, priceNum),
             priceDenom

@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "../interfaces/IPauseManager.sol";
 
+//should be an abstract contract, will fix in future pull request (will need to modify tests too)
+
 contract PauseManager is IPauseManager,Pausable,Ownable{
 
     mapping(address => bool) public isPauser;

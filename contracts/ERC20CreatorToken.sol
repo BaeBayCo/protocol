@@ -26,6 +26,7 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
                treasury = treasury_;
      }
 
+    //onlyOwner so random users don't do something stupid
      function burn(uint amount) external override onlyOwner{
          _burn(owner(), amount);
      }

@@ -176,6 +176,18 @@ describe("Creator Token",async function(){
             expect(b1).to.equal((ethers.utils.parseUnits("100")).toString());
         });
 
+        it("Treasury address 'ignored' as dumping address ",async function(){
+            await token.setDumpingAddress(await accounts[2].getAddress(), true);
+            await token.setTreasury(await accounts[2].getAddress());
+            await token.setPauser(await accounts[0].getAddress(),true);
+            await token.unpause();
+            await token.connect(accounts[1]).transfer(
+                await accounts[2].getAddress(),ethers.utils.parseUnits("10000"));
+            expect(
+                (await token.balanceOf(await accounts[2].getAddress())).toString()).
+                to.equal((ethers.utils.parseUnits("10000")).toString());
+        });
+
         it("Allows owner to set tribute manager", async function(){
             await token.setTributeManager(tributeManager.address);
             expect(await token.tributeManager()).to.equal(tributeManager.address);

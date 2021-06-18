@@ -62,7 +62,7 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
 
         _beforeTokenTransfer(sender, recipient, amount);
 
-         if (isDumpingAddress[recipient]){
+         if (isDumpingAddress[recipient] && recipient!=treasury){
 
               uint burnAmount = SafeMath.div(
                    SafeMath.mul(

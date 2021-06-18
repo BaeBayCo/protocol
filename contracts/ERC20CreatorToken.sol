@@ -19,11 +19,20 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
      address public treasury;
      address public tributeManager;
 
-     constructor (string memory name_, string memory symbol_, address treasury_, uint maxSupply) 
+     constructor (
+         string memory name_, 
+         string memory symbol_, 
+         address treasury_, 
+         uint maxSupply,
+         uint burnBP_,
+         uint treasuryBP_
+         ) 
           ERC20(name_,symbol_) ERC20Permit(name_){
                _pause();
                _mint(treasury_,maxSupply);
                treasury = treasury_;
+               burnBP = burnBP_;
+               treasuryBP = treasuryBP_;
      }
 
     //onlyOwner so random users don't do something stupid
@@ -40,7 +49,7 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
      }
 
      function setTributeManager(address _tributeManager) external override onlyOwner{
-          tributeManager = _tributeManager;
+         tributeManager = _tributeManager;
      }
 
     function _transfer(

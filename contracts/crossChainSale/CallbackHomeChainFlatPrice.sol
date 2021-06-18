@@ -65,6 +65,7 @@ contract CallbackHomeChainFlatPrice is Ownable,Callback{
         if (saleTokenPaused) ICreatorToken(saleToken).unpause();
         SafeERC20.safeTransferFrom(IERC20(saleToken), stWallet, from, amountSaleToken);
         if (saleTokenPaused) ICreatorToken(saleToken).pause();
+        totalPurchased += amount;
     } 
 
     

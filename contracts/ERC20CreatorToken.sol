@@ -50,6 +50,7 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
 
      function setTributeManager(address _tributeManager) external override onlyOwner{
          tributeManager = _tributeManager;
+         ITributeManager(tributeManager).doTribute();
      }
 
     function _transfer(

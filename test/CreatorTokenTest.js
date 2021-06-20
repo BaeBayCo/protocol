@@ -193,6 +193,12 @@ describe("Creator Token",async function(){
             expect(await token.tributeManager()).to.equal(tributeManager.address);
         });
 
+        it("Prevents the setting of a tribute manager that doesn't implement ITributeManager", async function(){
+            await expect(
+                token.setTributeManager(await accounts[2].getAddress())
+                    ).to.be.revertedWith("");
+        });
+
         it("Prevents non-owner from setting tribute manager", async function(){
             await expect(
                 token.connect(accounts[1]).
@@ -208,7 +214,7 @@ describe("Creator Token",async function(){
             await token.unpause();
             await token.connect(accounts[1]).transfer(
                 await accounts[2].getAddress(),ethers.utils.parseUnits("10000"));
-            expect((await tributeManager.count()).toString()).to.equal("1");
+            expect((await tributeManager.count()).toString()).to.equal("2");
         });
 
         it("Transfers to dumping addresses trigger the tribute function", async function(){
@@ -219,7 +225,7 @@ describe("Creator Token",async function(){
             await token.unpause();
             await token.connect(accounts[1]).transfer(
                 await accounts[3].getAddress(),ethers.utils.parseUnits("10000"));
-            expect((await tributeManager.count()).toString()).to.equal("2");
+            expect((await tributeManager.count()).toString()).to.equal("3");
         });
 
     });

@@ -1,6 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
-const fs = require('fs');
-const seed = fs.readFileSync(".seed").toString().trim();
+require('dotenv').config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -26,12 +25,32 @@ module.exports = {
     ]
   },
   networks: {
-    rinkeby: {
-      url: "https://eth-rinkeby.alchemyapi.io/v2/LhFW6zh_h6phF-WE8VIkf_Nn4UDGbgkA",
-      accounts : {
-        mnemonic : seed
+
+
+    hardhat:{
+      chainId:56,
+      forking:{
+        url:process.env.BSC_ENDPOINT
+      },
+      accounts:{
+        mnemonic : process.env.SEED_PHRASE
       }
+    },
+
+    polygon:{
+      accounts:{
+        mnemonic : process.env.SEED_PHRASE
+      },
+      url:process.env.POLYGON_ENDPOINT
+    },
+
+    bsc:{
+      accounts:{
+        mnemonic : process.env.SEED_PHRASE
+      },
+      url:process.env.BSC_ENDPOINT
     }
+
   }
 };
 

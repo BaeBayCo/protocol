@@ -20,6 +20,8 @@ contract CallbackDataBridge is Callback,Ownable{
     mapping(address => uint) public addressPurchase;
     //the list of buyers, for easier indexing, off chain
     address[] public buyers;
+    //timestamp of buyers entering the system
+    mapping(address => uint) public addressTimestamp;
 
     constructor(address _authorisedReceiver, uint _max){
         authorisedReceiver  = _authorisedReceiver;

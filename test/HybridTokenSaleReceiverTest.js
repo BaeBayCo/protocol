@@ -51,7 +51,7 @@ async function setupMockSale(start,end,dp,buyLimit,max,owner){
 
     await receiver.connect(owner).setPriceFeed(token.address,pfAddress);
 
-    return {receiver:receiver,callbackDB:callbackDB,token:token,priceFeed:priceFeed}
+    return {receiver:receiver,callbackDB:callbackDB,token:token,priceFeed:priceFeed,mockBuyLimit:mockBuyLimit}
 
 }
 
@@ -324,11 +324,11 @@ describe("Hybrid Token Sale Receiver Test", function(){
 
             });
 
-            it("Allows a multiple purchases at buy limit", async function(){
+            it("Allows multiple purchases at buy limit", async function(){
 
                 const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
                     Math.floor(Date.now()/1000)-120,
-                    Math.floor(Date.now()/1000)+120,
+                    Math.floor(Date.now()/1000)+1200,
                     18,
                     ethers.utils.parseUnits("500"),
                     ethers.utils.parseUnits("50000"),
@@ -352,7 +352,7 @@ describe("Hybrid Token Sale Receiver Test", function(){
 
                 const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
                     Math.floor(Date.now()/1000)-120,
-                    Math.floor(Date.now()/1000)+120,
+                    Math.floor(Date.now()/1000)+1200,
                     18,
                     ethers.utils.parseUnits("500"),
                     ethers.utils.parseUnits("50000"),
@@ -369,11 +369,34 @@ describe("Hybrid Token Sale Receiver Test", function(){
 
             });
 
+            it("Prevents a single purchase where buy limit is 0", async function(){
+
+                const {receiver,callbackDB,token,priceFeed,mockBuyLimit} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+1200,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await mockBuyLimit.setAddressSpecificLimit(await accounts[1].getAddress(),0);
+
+                await expect(receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("550")))
+                .to.be.revertedWith("error: requested deposit would cause total interval spend to exceed limit");
+
+            });
+
             it("Prevents multiple purchases where the non-first would cos the limit to be exceeded", async function(){
 
                 const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
                     Math.floor(Date.now()/1000)-120,
-                    Math.floor(Date.now()/1000)+120,
+                    Math.floor(Date.now()/1000)+1200,
                     18,
                     ethers.utils.parseUnits("500"),
                     ethers.utils.parseUnits("50000"),
@@ -419,8 +442,8 @@ describe("Hybrid Token Sale Receiver Test", function(){
             it("Deposit call reverts if sale has ended", async function(){
 
                 const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
-                    Math.floor(Date.now()/1000)-120,
-                    Math.floor(Date.now()/1000)-60,
+                    Math.floor(Date.now()/1000)-1200,
+                    Math.floor(Date.now()/1000)-600,
                     18,
                     ethers.utils.parseUnits("500"),
                     ethers.utils.parseUnits("50000"),

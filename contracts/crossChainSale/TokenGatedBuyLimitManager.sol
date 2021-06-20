@@ -7,14 +7,14 @@ import "./ERC1155EscrowManager.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-contract tokenGatedBuyLimitManager is IBuyLimitManager, ERC1155EscrowManager, Ownable{
+contract TokenGatedBuyLimitManager is IBuyLimitManager, ERC1155EscrowManager, Ownable{
 
     mapping(uint => uint) public idBuyLimit;
     mapping(address => uint) public userBuyLimit;
 
-    constructor(uint _expiry, address _tokenAddress) ERC1155EscrowManager(_expiry, _tokenAddress){}
+    constructor(address _tokenAddress,uint _expiry) ERC1155EscrowManager(_expiry, _tokenAddress){}
 
-    function setIdBuyLimit(uint id, uint limit) external{
+    function setIdBuyLimit(uint id, uint limit) external onlyOwner{
         require(idBuyLimit[id] == 0, "Error : tokenGatedBuyLimitManager : idBuyLimit already set");
         idBuyLimit[id] = limit;
     }

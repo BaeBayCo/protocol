@@ -5,6 +5,7 @@ import "../utils/PauseManager.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+//import "hardhat/console.sol";
 
 //for gasless polygon purchases for Ethereum users that entered via the bridge
 //not being used, but will be in future versions.
@@ -126,19 +127,23 @@ contract HybridTokenSaleReceiver is PauseManager{
 
         uint tokenDecimals = ERC20(token).decimals();
 
-        return SafeMath.mul(
-                amountUSD,
-                SafeMath.mul(
-                    SafeMath.div(latestPrice, 10**priceFeedDecimals),
-                    10**SafeMath.sub(18,tokenDecimals)
-                )
-            );
+        uint amountPaymentToken = (amountUSD*(10**priceFeedDecimals))/(latestPrice*(10**(18-tokenDecimals)));
+
+        //console.log("AmountUSD : ",amountUSD);
+        //console.log("Price : ",latestPrice);
+        //console.log("Amount PaymentToken : ",amountPaymentToken);
+
+        return amountPaymentToken;
     }
 
     function deposit(address token, uint amountUSD) external whenNotPaused{
+
+        require(block.timestamp > start, "HybridTokenSaleReceiver : Error : Sale has not started");
+        require(block.timestamp < end, "HybridTokenSaleReceiver : Error : Sale has ended");
+
         //calculate dollar value using chainlink
         uint amountPaymentToken = _computeValueInTokens(token, amountUSD);
-
+        
         //current amount in interval + amountDollars must be < limit for interval
         require(
             amountUSD + UserUsdWei[_msgSender()] 

@@ -31,6 +31,8 @@ async function setupMockSale(start,end,dp,buyLimit,max,owner){
     // USDC / USD
     if (networkDeets.chainId == 137) pfAddress = "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7";
 
+    const priceFeed = await ethers.getContractAt("AggregatorV2V3Interface",pfAddress);
+
     const HybridTokenSaleReceiver = await ethers.getContractFactory("HybridTokenSaleReceiver");
 
     const receiver = await HybridTokenSaleReceiver.connect(owner).deploy(
@@ -49,7 +51,7 @@ async function setupMockSale(start,end,dp,buyLimit,max,owner){
 
     await receiver.connect(owner).setPriceFeed(token.address,pfAddress);
 
-    return {receiver:receiver,callbackDB:callbackDB,token:token}
+    return {receiver:receiver,callbackDB:callbackDB,token:token,priceFeed:priceFeed}
 
 }
 
@@ -58,17 +60,21 @@ async function setupMockSale(start,end,dp,buyLimit,max,owner){
 
 //only Owner can do onlyOwner stuff
 
-//chainlink, test :
+//pricing data, test :
 // - get oracle data from fork
 // - check if correct... (check directly from call, compare)
+// - check if works correctly with 6dp token
 
-//doesn't allow purchases over buy limit
-// - make test buy limit manager
+//buy limit
+// - allows single purchase under purchase limit
+// - allows multiple purchases under limit
+// - allows single purchase equal to limit
 // - check if doesn't allow purchases over limit amount (first purchase)
 // - check if doesn't allow purchases over limit amount (multiple purchases)
 // - check if doesn't allow purchases when limit is set to 0
 
-//check correct amount is sent to correct address
+//check sales aren't allowed when contract is paused
+//check sales aren't allowed when sale is over/ yet to start
 
 describe("Hybrid Token Sale Receiver Test", function(){
 
@@ -91,18 +97,369 @@ describe("Hybrid Token Sale Receiver Test", function(){
                                                     accounts[0]
                                                 );
 
-            receiver.connect(accounts[0]).setReceiverAddress(await accounts[1].getAddress());
+            await receiver.connect(accounts[0]).setReceiverAddress(await accounts[1].getAddress());
 
             expect(await receiver.receiverAddress()).to.equal(await accounts[1].getAddress());
 
+        });
+
+        it("Non owner prevented from setting receiver address", async function(){
+
+            const {receiver,callbackDB,token} = await setupMockSale(
+                                                    Math.floor(Date.now()/1000),
+                                                    Math.floor(Date.now()/1000)+120,
+                                                    18,
+                                                    ethers.utils.parseUnits("500"),
+                                                    ethers.utils.parseUnits("50000"),
+                                                    accounts[0]
+                                                );
+
+            await expect(receiver.connect(accounts[1]).setReceiverAddress(await accounts[1].getAddress()))
+                    .to.be.revertedWith("Ownable: caller is not the owner");
 
         });
 
-        it("")
+        it("Owner can set callback address", async function(){
 
+            const {receiver,callbackDB,token} = await setupMockSale(
+                                                    Math.floor(Date.now()/1000),
+                                                    Math.floor(Date.now()/1000)+120,
+                                                    18,
+                                                    ethers.utils.parseUnits("500"),
+                                                    ethers.utils.parseUnits("50000"),
+                                                    accounts[0]
+                                                );
+
+            await receiver.connect(accounts[0]).setCallbackAddress(await accounts[1].getAddress());
+
+            expect(await receiver.callbackAddress()).to.equal(await accounts[1].getAddress());
+
+        });
+
+        it("Non owner prevented from setting callback address", async function(){
+
+            const {receiver,callbackDB,token} = await setupMockSale(
+                                                    Math.floor(Date.now()/1000),
+                                                    Math.floor(Date.now()/1000)+120,
+                                                    18,
+                                                    ethers.utils.parseUnits("500"),
+                                                    ethers.utils.parseUnits("50000"),
+                                                    accounts[0]
+                                                );
+
+            await expect(receiver.connect(accounts[1]).setCallbackAddress(await accounts[1].getAddress()))
+                    .to.be.revertedWith("Ownable: caller is not the owner");
+
+        });
+
+        it("Owner can set buy limit manager address", async function(){
+
+            const {receiver,callbackDB,token} = await setupMockSale(
+                                                    Math.floor(Date.now()/1000),
+                                                    Math.floor(Date.now()/1000)+120,
+                                                    18,
+                                                    ethers.utils.parseUnits("500"),
+                                                    ethers.utils.parseUnits("50000"),
+                                                    accounts[0]
+                                                );
+
+            await receiver.connect(accounts[0]).setBuyLimitManagerAddress(await accounts[1].getAddress());
+
+            expect(await receiver.buyLimitManager()).to.equal(await accounts[1].getAddress());
+
+        });
+
+        it("Non owner prevented from setting buy limit manager address", async function(){
+
+            const {receiver,callbackDB,token} = await setupMockSale(
+                                                    Math.floor(Date.now()/1000),
+                                                    Math.floor(Date.now()/1000)+120,
+                                                    18,
+                                                    ethers.utils.parseUnits("500"),
+                                                    ethers.utils.parseUnits("50000"),
+                                                    accounts[0]
+                                                );
+
+            await expect(receiver.connect(accounts[1]).setBuyLimitManagerAddress(await accounts[1].getAddress()))
+                    .to.be.revertedWith("Ownable: caller is not the owner");
+
+        });
 
     });
 
+        describe("Pricing", function(){
+
+            it("Gives correct pricing for 18dp tokens", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("500"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                //check "price" using oracle + off-chain calculation
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("100"));
+                //verify prices match
+                const price = await priceFeed.latestAnswer();
+                const decimals = await priceFeed.decimals();
+                const amountPaymentToken = 
+                ((ethers.utils.parseUnits("100")).mul((ethers.BigNumber.from("10")).pow(decimals))).
+                div(price.mul((ethers.BigNumber.from("1"))));
+
+                expect(amountPaymentToken.toString()).to.equal((await token.balanceOf(await accounts[0].getAddress())).toString());
+
+            });
+
+            it("Gives correct pricing for 6dp tokens", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    6,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 units
+                await token.mint(await accounts[1].getAddress(),"5000000000");
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
 
 
-})
+                //check "price" using oracle + off-chain calculation
+                //verify prices match
+
+                //check "price" using oracle + off-chain calculation
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("100"));
+                //verify prices match
+                const price = await priceFeed.latestAnswer();
+                const decimals = await priceFeed.decimals();
+                const amountPaymentToken = 
+                ((ethers.utils.parseUnits("100")).mul((ethers.BigNumber.from("10")).pow(decimals))).
+                div(price.mul((ethers.BigNumber.from("10").pow(ethers.BigNumber.from("12")))));
+
+                expect(amountPaymentToken.toString()).to.equal((await token.balanceOf(await accounts[0].getAddress())).toString());;
+
+            });
+
+        });
+
+        describe("Buy Limits", function(){
+
+            it("Allows a single purchase under buy limit", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("100"));
+
+                expect((await receiver.UserUsdWei(await accounts[1].getAddress())).toString()).
+                to.equal((ethers.utils.parseUnits("100")).toString())
+
+            });
+
+            it("Allows mutltiple purchases under buy limit", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("100"));
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("100"));
+
+                expect((await receiver.UserUsdWei(await accounts[1].getAddress())).toString()).
+                to.equal((ethers.utils.parseUnits("200")).toString())
+
+            });
+
+            it("Allows a single purchase at buy limit", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("500"));
+
+                expect((await receiver.UserUsdWei(await accounts[1].getAddress())).toString()).
+                to.equal((ethers.utils.parseUnits("500")).toString());
+
+            });
+
+            it("Allows a multiple purchases at buy limit", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("400"));
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("100"));
+
+                expect((await receiver.UserUsdWei(await accounts[1].getAddress())).toString()).
+                to.equal((ethers.utils.parseUnits("500")).toString());
+
+            });
+
+            it("Prevents a single purchase above the buy limit", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await expect(receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("550")))
+                .to.be.revertedWith("error: requested deposit would cause total interval spend to exceed limit");
+
+            });
+
+            it("Prevents multiple purchases where the non-first would cos the limit to be exceeded", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                //send 100 USD
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("470"));
+
+                await expect(receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("50")))
+                .to.be.revertedWith("error: requested deposit would cause total interval spend to exceed limit");
+
+            });
+
+        });
+
+        describe("Pausing / Ending of sale", async function(){
+
+            it("Deposit call reverts if sale hasn't already started", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)+120,
+                    Math.floor(Date.now()/1000)+240,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await expect(
+                    receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("470"))
+                ).to.be.revertedWith("HybridTokenSaleReceiver : Error : Sale has not started");
+
+            });
+
+            it("Deposit call reverts if sale has ended", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)-60,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await expect(
+                    receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("470"))
+                ).to.be.revertedWith("HybridTokenSaleReceiver : Error : Sale has ended");
+
+            });
+
+            it("Deposit call reverts if contract is paused", async function(){
+
+                const {receiver,callbackDB,token,priceFeed} = await setupMockSale(
+                    Math.floor(Date.now()/1000)-120,
+                    Math.floor(Date.now()/1000)+120,
+                    18,
+                    ethers.utils.parseUnits("500"),
+                    ethers.utils.parseUnits("50000"),
+                    accounts[0]
+                );
+
+                await receiver.setPauser(await accounts[0].getAddress(),true);
+                await receiver.pause();
+
+                await token.mint(await accounts[1].getAddress(),ethers.utils.parseUnits("1000"));
+                await token.connect(accounts[1]).approve(receiver.address,ethers.constants.MaxUint256);
+
+                await expect(
+                    receiver.connect(accounts[1]).deposit(token.address,ethers.utils.parseUnits("470"))
+                ).to.be.revertedWith("Pausable: paused");
+
+            });
+
+        });
+
+
+    });

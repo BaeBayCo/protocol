@@ -15,7 +15,7 @@ async function setup(treasuryWallet,maxSupply,receiver,num,denom,maxPurchasable)
     const saleToken = await SaleToken.deploy(
         "TEST","TEST",
         await treasuryWallet.getAddress(),
-        maxSupply,"0","0");
+        maxSupply,"0","0","0");
     await saleToken.deployed();
 
     const CallbackHCFP = await ethers.getContractFactory("CallbackHomeChainFlatPrice");

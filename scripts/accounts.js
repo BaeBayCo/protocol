@@ -3,7 +3,7 @@ async function main() {
     const data = await Promise.all(accounts.map(account => account.getAddress()))
     console.log(data);
     //just to verify
-    console.log("account0 address ",acc0Address);
+    console.log("account0 address ",await accounts[0].getAddress());
 }
 
 main()

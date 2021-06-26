@@ -12,12 +12,20 @@ import "./utils/PauseManager.sol";
 contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
 
      uint public burnBP;
+     uint public reflectBP;
      uint public treasuryBP;
+
+     uint public denomTotalSupply;
+     uint public numerTotalSupply;
 
      mapping(address => bool) public isDumpingAddress;
 
      address public treasury;
      address public tributeManager;
+
+     string internal _tokenURI;
+
+     event Reflection(address indexed account, uint indexed amount);
 
      constructor (
          string memory name_, 
@@ -25,19 +33,41 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
          address treasury_, 
          uint maxSupply,
          uint burnBP_,
+         uint reflectBP_,
          uint treasuryBP_
          ) 
           ERC20(name_,symbol_) ERC20Permit(name_){
                _pause();
                _mint(treasury_,maxSupply);
+               denomTotalSupply = maxSupply;
+               numerTotalSupply = maxSupply;
                treasury = treasury_;
                burnBP = burnBP_;
+               reflectBP = reflectBP_;
                treasuryBP = treasuryBP_;
      }
 
+    function totalSupply() public view override returns(uint256){
+        return numerTotalSupply;
+    }
+
+    function tokenURI() public view returns(string memory){
+        return _tokenURI;
+    }
+
     //onlyOwner so random users don't do something stupid
      function burn(uint amount) external override onlyOwner{
-         _burn(owner(), amount);
+         _burn(owner(), _getRawAmount(amount));
+     }
+
+    //onlyOwner so random users don't do something stupid
+    //here for testing & userbase-wide aidrops
+     function reflect(uint amount) external onlyOwner{
+         _reflect(owner(), amount);
+     }
+
+     function setTokenURI(string memory tokenURI_) external onlyOwner{
+         _tokenURI = tokenURI_;
      }
 
      function setDumpingAddress(address dump, bool status) external override onlyOwner{
@@ -53,6 +83,32 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
          ITributeManager(tributeManager).doTribute();
      }
 
+    function balanceOf(address account) public view virtual override returns (uint256){
+        uint rawBalance = super.balanceOf(account);
+        return _getAdjustedAmount(rawBalance);
+    }
+
+    function _getAdjustedAmount(uint amountRaw) internal view returns(uint){
+        return SafeMath.div(
+                        SafeMath.mul(
+                            amountRaw,
+                            totalSupply()
+                        ),
+                        denomTotalSupply
+                    );
+    }
+
+    function _getRawAmount(uint amountAdjusted) internal view returns (uint){
+        //(balance*denomTotalSupply)/totalSupply
+        return SafeMath.div(
+            SafeMath.mul(
+                amountAdjusted,
+                denomTotalSupply
+            ),
+            totalSupply()
+        );
+    }
+
     function _transfer(
         address sender,
         address recipient,
@@ -61,7 +117,9 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
 
         require(!paused(), "ERC20Pausable: token transfer while paused");
 
-        _beforeTokenTransfer(sender, recipient, amount);
+        uint rawAmount = _getRawAmount(amount);
+
+        _beforeTokenTransfer(sender, recipient, rawAmount);
 
          if (isDumpingAddress[recipient] && recipient!=treasury){
 
@@ -69,6 +127,14 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
                    SafeMath.mul(
                         amount,
                         burnBP
+                    ),
+                   10000
+               );
+
+               uint reflectAmount = SafeMath.div(
+                   SafeMath.mul(
+                        amount,
+                        reflectBP
                     ),
                    10000
                );
@@ -81,19 +147,38 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
                    10000
                );
 
-               amount = SafeMath.sub(
-                    amount,
-                    SafeMath.add(burnAmount,treasuryAmount)
-               );
+               rawAmount = _getRawAmount(SafeMath.sub(
+                                                amount,
+                                                SafeMath.add(
+                                                    burnAmount,
+                                                    SafeMath.add(
+                                                        treasuryAmount,
+                                                        reflectAmount))
+                                        ));
 
                _burn(sender, burnAmount);
+               _reflect(sender,reflectAmount);
                _transfer(sender, treasury, treasuryAmount);
 
                //We're implementing "dumper extracted value"
                if(tributeManager != address(0)) ITributeManager(tributeManager).doTribute();
          }
 
-        super._transfer(sender,recipient,amount);
+        super._transfer(sender,recipient,rawAmount);
+    }
+
+    function _reflect(address account,uint amount) internal {
+        uint rawAmount = _getRawAmount(amount);
+        denomTotalSupply -= rawAmount;
+        super._burn(account,rawAmount);
+        emit Reflection(account, amount);
+    }
+
+    function _burn(address account, uint256 amount) internal override{
+        uint rawAmount = _getRawAmount(amount);
+        numerTotalSupply -= amount;
+        denomTotalSupply -= rawAmount;
+        super._burn(account,rawAmount);
     }
 
 }

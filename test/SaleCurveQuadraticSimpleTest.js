@@ -9,11 +9,11 @@ async function createTokensAndCurve(multiple,saleLimit,endTime,a){
     const CreatorToken = await ethers.getContractFactory("ERC20CreatorToken");
     const SaleCurve = await ethers.getContractFactory("SaleCurveQuadraticSimple");
 
-    const _saleToken = await CreatorToken.deploy("SaleToken","SALE",account0Address,ethers.constants.MaxUint256,"0","0");
+    const _saleToken = await CreatorToken.deploy("SaleToken","SALE",account0Address,ethers.constants.MaxUint256,"0","0","0");
     await _saleToken.deployed();
 
     //stop gap solution for testing is to mint infinity tokens to the signer address
-    const _paymentToken = await CreatorToken.deploy("PayToken","PAY",account1Address,ethers.constants.MaxUint256,"0","0");
+    const _paymentToken = await CreatorToken.deploy("PayToken","PAY",account1Address,ethers.constants.MaxUint256,"0","0","0");
     await _paymentToken.deployed();
     await _paymentToken.setPauser(account0Address,true);
     await _paymentToken.unpause();

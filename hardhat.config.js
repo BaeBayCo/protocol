@@ -28,11 +28,11 @@ module.exports = {
 
 
     hardhat:{
-      chainId:56,
-      //chainId:137,
+      //chainId:56,
+      chainId:137,
       forking:{
-        url:process.env.BSC_ENDPOINT
-        //url:process.env.POLYGON_ENDPOINT
+        //url:"https://bsc-dataseed.binance.org/"
+        url:"https://rpc-mainnet.matic.network"
       },
       accounts:{
         mnemonic : process.env.SEED_PHRASE

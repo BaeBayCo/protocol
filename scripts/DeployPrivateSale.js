@@ -16,8 +16,8 @@ async function main() {
     const HybridTokenSaleReceiver = await ethers.getContractFactory("HybridTokenSaleReceiver");
 
     const receiver = await HybridTokenSaleReceiver.deploy(
-        start,
-        end,
+        Math.floor(Date.now()/1000),
+        1624363200,
         "0x617c54C654e3dA2a65c91D2Dff9164c32c407097",
         "0x617c54C654e3dA2a65c91D2Dff9164c32c407097",
         tgbl.address
@@ -28,6 +28,8 @@ async function main() {
     await receiver.setPriceFeed("0xe9e7cea3dedca5984780bafc599bd69add087d56",
                                 "0xcBb98864Ef56E9042e7d2efef76141f15731B82f");
 
+    console.log("Receiver deployed @ " + receiver.address);
+
     const CallbackDB = await ethers.getContractFactory("CallbackDataBridge");
     callbackDB = await CallbackDB.deploy(
             receiver.address,
@@ -36,6 +38,8 @@ async function main() {
     await callbackDB.deployed();
 
     await receiver.setCallbackAddress(callbackDB.address);
+
+    console.log("Callback deployed @ " + callbackDB.address);
     
     //transfer ownership
     await receiver.transferOwnership("0x617c54C654e3dA2a65c91D2Dff9164c32c407097");

@@ -313,6 +313,33 @@ describe("Creator Token",async function(){
                 equal((ethers.utils.parseUnits("100000")).toString());
             })
 
+            it("Burns don't effect token balances", async function(){
+                await token.setPauser(await accounts[0].getAddress(),true);
+                await token.unpause(); 
+                await token.connect(accounts[1]).transfer(await accounts[2].getAddress(),
+                                                          ethers.utils.parseUnits("100000"));
+                await token.connect(accounts[1]).transfer(await accounts[3].getAddress(),
+                                                          ethers.utils.parseUnits("100000"));
+                await token.connect(accounts[1]).transfer(await accounts[4].getAddress(),
+                                                          ethers.utils.parseUnits("100000"));
+                await token.connect(accounts[1]).transfer(await accounts[5].getAddress(),
+                                                          ethers.utils.parseUnits("100000"));
+                await token.connect(accounts[1]).transfer(await accounts[6].getAddress(),
+                                                          ethers.utils.parseUnits("100000"));
+                await token.transferOwnership(await accounts[1].getAddress());
+                await token.connect(accounts[1]).burn(ethers.utils.parseUnits("500000"));
+                expect((await token.balanceOf(await accounts[2].getAddress())).toString()).to.
+                equal((ethers.utils.parseUnits("100000")).toString());
+                expect((await token.balanceOf(await accounts[3].getAddress())).toString()).to.
+                equal((ethers.utils.parseUnits("100000")).toString());
+                expect((await token.balanceOf(await accounts[4].getAddress())).toString()).to.
+                equal((ethers.utils.parseUnits("100000")).toString());
+                expect((await token.balanceOf(await accounts[5].getAddress())).toString()).to.
+                equal((ethers.utils.parseUnits("100000")).toString());
+                expect((await token.balanceOf(await accounts[6].getAddress())).toString()).to.
+                equal((ethers.utils.parseUnits("100000")).toString());
+            })
+
         });
 
         

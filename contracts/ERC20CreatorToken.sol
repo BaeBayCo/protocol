@@ -164,7 +164,12 @@ contract ERC20CreatorToken is ICreatorToken,ERC20Permit,PauseManager{
                if(tributeManager != address(0)) ITributeManager(tributeManager).doTribute();
          }
 
+        //ERROR IS HERE
         super._transfer(sender,recipient,rawAmount);
+        //This is causing emit Transfer(sender,recipient,rawAmount)
+        //The event emitted should be Transfer(sender,recipient,amount)
+        //The changing of balances is CORRRECT
+        //The event data is WRONG
     }
 
     function _reflect(address account,uint amount) internal {

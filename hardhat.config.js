@@ -43,7 +43,7 @@ module.exports = {
       accounts:{
         mnemonic : process.env.SEED_PHRASE
       },
-      url:process.env.POLYGON_ENDPOINT
+      url:"https://rpc-mainnet.matic.network"
     },
 
     bsc:{

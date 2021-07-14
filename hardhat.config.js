@@ -32,7 +32,7 @@ module.exports = {
       chainId:137,
       forking:{
         //url:"https://bsc-dataseed.binance.org/"
-        url:"https://rpc-mainnet.matic.network"
+        url:"https://rpc-mainnet.maticvigil.com"
       },
       accounts:{
         mnemonic : process.env.SEED_PHRASE
@@ -46,12 +46,12 @@ module.exports = {
       url:"https://rpc-mainnet.matic.network"
     },
 
-    bsc:{
+    /**bsc:{
       accounts:{
         mnemonic : process.env.SEED_PHRASE
       },
       url:process.env.BSC_ENDPOINT
-    }
+    }*/
 
   }
 };
